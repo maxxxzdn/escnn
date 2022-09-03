@@ -194,20 +194,22 @@ class _RdPointConv(torch_geometric.nn.MessagePassing, EquivariantModule, ABC):
         if groups != 1:
             raise NotImplementedError(f'`groups !=1` not supported yet!')
 
-        # BlocksBasisSampler: submodule which takes care of building the filter
-        self._basissampler = BlocksBasisSampler(in_type.representations, out_type.representations,
+        # build the filter only if 'basis_filter' is not False.
+        if basis_filter:
+            # BlocksBasisSampler: submodule which takes care of building the filter
+            self._basissampler = BlocksBasisSampler(in_type.representations, out_type.representations,
                                                     self._build_kernel_basis,
                                                     basis_filter=basis_filter,
                                                     recompute=recompute)
 
-        if self.basissampler.dimension() == 0:
-            raise ValueError('''
-                The basis for the steerable filter is empty!
-                Tune the `frequencies_cutoff`, `kernel_size`, `rings` or `basis_filter` parameters to allow
-                for a larger basis.
-            ''')
+            if self.basissampler.dimension() == 0:
+                raise ValueError('''
+                    The basis for the steerable filter is empty!
+                    Tune the `frequencies_cutoff`, `kernel_size`, `rings` or `basis_filter` parameters to allow
+                    for a larger basis.
+                ''')
 
-        self.weights = Parameter(torch.zeros(self.basissampler.dimension()), requires_grad=True)
+            self.weights = Parameter(torch.zeros(self.basissampler.dimension()), requires_grad=True)
 
     @abstractmethod
     def _build_kernel_basis(self, in_repr: Representation, out_repr: Representation) -> KernelBasis:
